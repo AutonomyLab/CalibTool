@@ -32,11 +32,11 @@ void processImage(Mat img){
         draw = img;
         break;
     case 1:
-    	track::blur(&img, blurSize, ((double) blurSigma) / 10.0);
+    	track::grayblur(&img, blurSize, ((double) blurSigma) / 10.0);
         cvtColor(img, draw, CV_GRAY2RGB);
         break;
     case 2:
-    	track::blur(&img, blurSize, ((double) blurSigma) / 10.0);
+    	track::grayblur(&img, blurSize, ((double) blurSigma) / 10.0);
         track::canny(&img, cannyThresh);
         cvtColor(img, draw, CV_GRAY2RGB);
         break;
@@ -82,10 +82,11 @@ void help() {
 	     << "  objects (e.g., chatterboxes)." << endl
 	     << "Options:" << endl
 	     << "  -d:          enable debugging output" << endl
-	     << "  -h <height>: the pixel height of the input images (default 1200)" << endl
+	     << "  -h           this help info" << endl
 	     << "  -o <file>:   output the configuration to file (must end in \".yaml\")" << endl
 	     << "  -v <num>:    video input device number (default 0)" << endl
-	     << "  -w <width>:  the pixel width of the input images (default 1600)" << endl
+	     << "  -x <width>:  the pixel width of the input images (default 1600)" << endl
+	     << "  -y <height>: the pixel height of the input images (default 1200)" << endl
 ;
 }
 
