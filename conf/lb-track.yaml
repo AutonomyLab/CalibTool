@@ -1,0 +1,9 @@
+%YAML:1.0
+ImageHeightPx: 1200
+ImageWidthPx: 1600
+BlurSize: 0
+BlurSigma: 0.
+CannyThreshold: 100
+MinRadius: 40
+MaxRadius: 78
+AccumulatorThreshold: 27
