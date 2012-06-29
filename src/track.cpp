@@ -6,10 +6,13 @@ using namespace cv;
 
 namespace track {
 
-void blur(Mat *img, int size, double sigma) {
+void grayblur(Mat *img, int size, double sigma) {
+    cvtColor(*img, *img, CV_RGB2GRAY);
+    if (size == 0 || sigma < 0.001)
+    	return;
+
     if (size % 2 == 0)
     	size++;
-    cvtColor(*img, *img, CV_RGB2GRAY);
     GaussianBlur(*img, *img, Size(size, size),sigma);
 }
 
@@ -18,11 +21,11 @@ void canny(Mat *img, double threshold) {
 }
 
 void detectCircles(Mat img, vector<Vec3f> *circles, int blurSize, double blurSigma,
-		           int minRadius, int maxRadius, double cannyThresh, double accThresh) {
+		           int minRadius, int maxRadius, double cannyThresh, double accThresh, bool overlapping) {
     circles->clear();
-	blur(&img, blurSize, blurSigma);
-    HoughCircles(img, *circles, CV_HOUGH_GRADIENT, 1, minRadius*2, cannyThresh,
-            accThresh, minRadius, maxRadius);
+    grayblur(&img, blurSize, blurSigma);
+    HoughCircles(img, *circles, CV_HOUGH_GRADIENT, 1, overlapping? 1 : minRadius*2,
+    		cannyThresh,accThresh, minRadius, maxRadius);
 }
 
 bool isOccluded(Vec3f circle, int imgWidth, int imgHeight){
