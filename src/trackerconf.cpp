@@ -24,7 +24,7 @@ void processImage(Mat img){
 
     track::detectCircles(img, &circles, blurSize, blurSigma, minRadius, maxRadius, cannyThresh, accThresh);
 
-    t = ((double) getTickCount() - t) / getTickFrequency() * 1000;
+    t = ((double) getTickCount() - t) / getTickFrequency();
 
     Mat draw;
     switch(mode){
@@ -55,7 +55,7 @@ void processImage(Mat img){
 
     Point org(50, 150);
     std::stringstream sstm;
-    sstm << t << "ms";
+    sstm << (int)(1/t) << "fps";
 
     putText(draw, sstm.str(), org, FONT_HERSHEY_SIMPLEX, 3,
             Scalar(255, 255, 255), 5, 8);
