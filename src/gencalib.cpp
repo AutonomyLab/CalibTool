@@ -178,10 +178,10 @@ int main(int argc, char** argv) {
 
 			if (debug) {
 				cout << "Reprojection of points:" << endl;
-				Mat calib = loadCalib(outfile);
+				Mat calib = calib::loadCalib(outfile);
 				float wx, wy;
 				for (int i = 0; i < corners.size(); i++) {
-					toWorld(calib, corners[i].x, corners[i].y, &wx, &wy);
+					calib::toWorld(calib, corners[i].x, corners[i].y, &wx, &wy);
 					cout << i << ": " << world[i].x << "," << world[i].y << " => " << wx << "," << wy << endl;
 				}
 			}

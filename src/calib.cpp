@@ -1,6 +1,8 @@
 #include "opencv2/core/core.hpp"
 #include "calib.hpp"
 
+namespace calib {
+
 Mat loadCalib(string filename) {
 	FileStorage fs(filename, FileStorage::READ);
 	Mat h;
@@ -14,4 +16,6 @@ void toWorld(Mat calib, float pixelX, float pixelY, float *worldX, float *worldY
 	Mat u = calib * p;
 	*worldX = u.at<double>(0)/u.at<double>(2);
 	*worldY = u.at<double>(1)/u.at<double>(2);
+}
+
 }
