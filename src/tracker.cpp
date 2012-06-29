@@ -18,6 +18,8 @@ void help() {
 	     << "  -c <calib>   camera calibration file to convert to world coords" << endl
 	     << "  -d           enable debugging output" << endl
 	     << "  -f <fps>     max framerate at which camera is scanned (default 20)" << endl
+	     << "  -h           this help info"
+	     << "  -u           enable ui" << endl
 	     << "  -v <num>     video input device number (default 0)" << endl
 ;
 }
@@ -34,6 +36,7 @@ long millis(timespec ts) {
 
 int main(int argc, char** argv) {
 	bool debug = false;
+	bool ui = false;
 	int fps = 20;
 	int cam = 0;
 	bool hasTrack = false;
@@ -41,7 +44,7 @@ int main(int argc, char** argv) {
 	bool hasCalib = false;
 	string calibfile;
 	int c;
-	while ((c = getopt(argc, argv, "dhv:t:c:f:")) != -1) {
+	while ((c = getopt(argc, argv, "dhuv:t:c:f:")) != -1) {
 		switch (c){
 		case 'd':
 			debug = true;
@@ -49,6 +52,9 @@ int main(int argc, char** argv) {
 		case 'h':
 			help();
 			return 0;
+		case 'u':
+			ui = true;
+			break;
 		case 'f':
 			fps = atoi(optarg);
 			break;
@@ -116,11 +122,19 @@ int main(int argc, char** argv) {
 	timespec before, after;
 	long mbefore, mafter;
 
+	string camname;
+	if (ui) {
+		cout << "UI enabled for video" << cam << endl;
+	    std::stringstream sstm;
+	    sstm << "video" << cam;
+	    camname = sstm.str();
+		namedWindow(camname, CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
+	}
     while (cap.read(src)) {
     	clock_gettime(CLOCK_REALTIME, &before);
      	mbefore = millis(before);
 
-    	track::detectCircles(src, &circles, blurSize, blurSigma, minRadius, maxRadius, cannyThresh, accThresh);
+    	track::detectCircles(src, &circles, blurSize, blurSigma, minRadius, maxRadius, cannyThresh, accThresh, !debug);
     	if (circles.size() > 0){
 			cout << mbefore;
 			for (int i = 0; i < circles.size(); i++) {
@@ -128,7 +142,7 @@ int main(int argc, char** argv) {
 				float y = circles[i][1];
 				if (hasCalib)
 					calib::toWorld(convert, x, y, &x, &y);
-				cout << " " << x << " " << y;
+				cout << " " << (int)x << " " << (int)y;
 			}
 			cout << endl;
     	}
@@ -136,7 +150,56 @@ int main(int argc, char** argv) {
     	mafter = millis(after);
 
     	long diff = mafter - mbefore;
+
+    	if (ui) {
+    	    /// Draw the circles detected
+    	    for (size_t i = 0; i < circles.size(); i++) {
+    	        Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+    	        int radius = cvRound(circles[i][2]);
+    	        // circle center
+    	        circle(src, center, 3, Scalar(0, 255, 0), -1, 8, 0);
+    	        // circle outline
+    	        circle(src, center, radius, Scalar(0, 0, 255), 3, 8, 0);
+
+    	        if (debug){
+					float x = circles[i][0];
+					float y = circles[i][1];
+					if (hasCalib)
+						calib::toWorld(convert, x, y, &x, &y);
+
+					int cx = ((center.x+radius+50)/50)*50;
+					int cy = ((center.y+50)/50)*50;
+					Point org(cx, cy);
+					std::stringstream sstm;
+					sstm << (int)x << "," << (int)y;
+
+					putText(src, sstm.str(), org, CV_FONT_HERSHEY_PLAIN, 2,
+							Scalar(255, 0, 255), 2, 8);
+    	        }
+    	    }
+    	    std::stringstream pfps;
+    	    pfps << (int)(1000/diff) << " proc fps";
+
+        	clock_gettime(CLOCK_REALTIME, &after);
+        	mafter = millis(after);
+        	diff = mafter - mbefore;
+        	std::stringstream ufps;
+        	ufps << (int)(1000/diff) << " ui fps";
+
+    	    putText(src, pfps.str(), Point(50, 150), CV_FONT_HERSHEY_PLAIN, 2,
+    	            Scalar(255, 255, 255), 2, 8);
+    	    putText(src, ufps.str(), Point(50, 200), CV_FONT_HERSHEY_PLAIN, 2,
+    	            Scalar(255, 255, 255), 2, 8);
+
+    	    imshow(camname, src);
+    	}
+
         if (diff < period)
-        	usleep((period - diff)*1000);
+        	if (ui)
+        		waitKey(period - diff);
+        	else
+        		usleep((period - diff)*1000);
+        else if (ui)
+    		waitKey(1);
     }
 }
