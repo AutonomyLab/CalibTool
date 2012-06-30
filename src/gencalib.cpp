@@ -44,10 +44,12 @@ int main(int argc, char** argv) {
 	bool debug = false;
 	bool iopt = false;
 	string infile;
+	bool vopt = false;
+	int cam = 0;
 	bool calib = false;
 	string outfile;
 	int c;
-	while ((c = getopt(argc, argv, "hdi:o:")) != -1) {
+	while ((c = getopt(argc, argv, "hdi:v:o:")) != -1) {
 		switch (c){
 		case 'd':
 			debug = true;
@@ -55,6 +57,10 @@ int main(int argc, char** argv) {
 		case 'i':
 			iopt = true;
 			infile = string(optarg);
+			break;
+		case 'v':
+			vopt = true;
+			cam = atoi(optarg);
 			break;
 		case 'o':
 			calib = true;
@@ -76,7 +82,7 @@ int main(int argc, char** argv) {
 	}
 
 	int rem = argc - optind;
-	if (!iopt || (calib && rem != 6) || (!calib && rem != 2)) {
+	if (!(iopt ^ vopt) || (calib && rem != 6) || (!calib && rem != 2)) {
 		cout << "Invalid arguments." << endl << endl;
 		help();
 		return 1;
@@ -84,8 +90,6 @@ int main(int argc, char** argv) {
 
 	int rows = atoi(argv[optind++]);
 	int cols = atoi(argv[optind++]);
-	cout << "Detecting corners of " << rows << "x" << cols << " board in "
-			<< infile << "..." << endl;
 
 	if (rows < 3 || cols < 3) {
 		cout << "Invalid board dimensions." << endl;
@@ -97,7 +101,31 @@ int main(int argc, char** argv) {
 	int icols = cols - 1;
 	Size dim(icols, irows);
 
-	Mat src = imread(infile, 1);
+	Mat src;
+	if (iopt) {
+		src = imread(infile, 1);
+		cout << "Detecting corners of " << rows << "x" << cols << " board in "
+				<< infile << "..." << endl;
+
+	} else {
+	    VideoCapture cap(cam);
+	    if (!cap.isOpened()) // check if we succeeded
+	    {
+	        cout << "Cannot initialize video capturing" << endl << endl;
+	        return -1;
+	    }
+	    cap.set(CV_CAP_PROP_FRAME_WIDTH, 1600);
+	    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 1200);
+	    cout << "Capture from camera" << endl;
+		Mat live;
+	    cap.read(live);
+	    src = live.clone();
+	    cap.release();
+		cout << "Detecting corners of " << rows << "x" << cols << " board in video"
+				<< cam << "..." << endl;
+
+	}
+
 	Mat gray;
 	cvtColor(src, gray, CV_BGR2GRAY);
 	vector<Point2f> corners;
