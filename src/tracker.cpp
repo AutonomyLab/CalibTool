@@ -166,17 +166,22 @@ int main(int argc, char** argv)
      	mbefore = millis(before);
 	
     	track::detectCircles(src, &circles, blurSize, blurSigma, minRadius, maxRadius, cannyThresh, accThresh, !debug);
+	
+#if 0	
     	if (circles.size() > 0){
-	  //cout << mbefore;
+	  cout << mbefore;
 	  for (int i = 0; i < circles.size(); i++) {
 	    float x = circles[i][0];
 	    float y = circles[i][1];
+	    
 	    if (hasCalib)
 	      calib::toWorld(convert, x, y, &x, &y);
-	    // cout << " " << (int)x << " " << (int)y;
+	    cout << " " << (int)x << " " << (int)y;
 	  }
-	  //cout << endl;
+	  cout << endl;
     	}
+#endif
+	
     	clock_gettime(CLOCK_REALTIME, &after);
     	mafter = millis(after);
 	
@@ -186,27 +191,37 @@ int main(int argc, char** argv)
 	vector<Rect> rects( circles.size() );
 	for (size_t i = 0; i < circles.size(); i++) 
 	  rects[i] = Rect( circles[i][0], circles[i][1], circles[i][2], circles[i][2] );
+
 	// cluster the rectangles together - similar rectangles are averaged together
-	const int min_group_size = 2;
+	const int min_group_size = 6;
 	const double rect_relative_size = 0.4;       
 	cv::groupRectangles( rects, min_group_size, rect_relative_size );
-
+	
 	if( useRedis )
-	  {// push each rectangle into Redis as a robot position estimate
+	  {
+	    // push each rectangle into Redis as a robot position estimate
 	    // the output is a string of the x and y positions of each rectangle 
 	    // separated by spaces ( "(x0 y0) (x1 y1) (y2 y2)"  )
 	    std::stringstream str;
 	    for (size_t i = 0; i < rects.size(); i++) 
-	      str << '(' << rects[i].x << ' ' << rects[i].y << ") ";
-	    
-	    std::stringstream key;
-	    key << "camera" << cam;
-
-	    void* reply = redisCommand( redisc, "SET %s %s", 
-					key.str().c_str(), str.str().c_str() );
-	    
-	    if( reply == NULL )
-	      printf( "Redis error on SET: %s\n", redisc->errstr );
+	      {
+		float x = rects[i].x;
+		float y = rects[i].y;
+		
+		if (hasCalib)
+		  calib::toWorld(convert, x, y, &x, &y);
+		
+		str << x << ' ' << y << ' ';
+		
+		std::stringstream key;
+		key << "camera" << cam;
+		
+		void* reply = redisCommand( redisc, "SET %s %s", 
+					    key.str().c_str(), str.str().c_str() );
+		
+		if( reply == NULL )
+		  printf( "Redis error on SET: %s\n", redisc->errstr );
+	      }
 	  }
 
     	if (ui) {
